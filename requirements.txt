@@ -1,0 +1,6 @@
+flask
+instagrapi
+instaloader
+moviepy
+imageio[ffmpeg]
+apscheduler
