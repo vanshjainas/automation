@@ -26,9 +26,17 @@ def save_scheduled(data):
     with open(SCHEDULED_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-def download_reel(url):
+def download_reel(url, sessionid=None, username=None):
     import instaloader
     L = instaloader.Instaloader(dirname_pattern="downloads", filename_pattern="{shortcode}")
+    
+    if sessionid and username:
+        try:
+            # Use same sessionid from instagrapi to reduce blocking
+            L.load_session_from_dict(username, {"sessionid": sessionid})
+        except Exception as e:
+            print("Session login failed:", e)
+
     shortcode = url.split("/")[-2]
     try:
         post = instaloader.Post.from_shortcode(L.context, shortcode)
@@ -38,7 +46,9 @@ def download_reel(url):
             return os.path.join("downloads", mp4_files[0])
     except Exception as e:
         print("Download error:", e)
+
     return None
+
 
 def post_to_instagram(account_name, video_path, caption):
     try:
