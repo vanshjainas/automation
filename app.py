@@ -26,19 +26,25 @@ def save_scheduled(data):
     with open(SCHEDULED_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-def download_reel(url):
-    import instaloader
-    L = instaloader.Instaloader(dirname_pattern="downloads", filename_pattern="{shortcode}")
-    shortcode = url.split("/")[-2]
+def download_reel(url, sessionid=None, username=None):
+    import subprocess
+    import uuid
+
+    output_name = f"downloads/{str(uuid.uuid4())}.mp4"
     try:
-        post = instaloader.Post.from_shortcode(L.context, shortcode)
-        L.download_post(post, target="downloads")
-        mp4_files = [f for f in os.listdir("downloads") if f.endswith(".mp4") and shortcode in f]
-        if mp4_files:
-            return os.path.join("downloads", mp4_files[0])
+        result = subprocess.run([
+            "yt-dlp", "-o", output_name, url
+        ], capture_output=True, text=True)
+        
+        if result.returncode == 0 and os.path.exists(output_name):
+            return output_name
+        else:
+            print("yt-dlp error:", result.stderr)
     except Exception as e:
-        print("Download error:", e)
+        print("yt-dlp exception:", e)
+    
     return None
+
 
 def post_to_instagram(account_name, video_path, caption):
     try:
