@@ -4,3 +4,4 @@ instaloader
 moviepy
 imageio[ffmpeg]
 apscheduler
+yt-dlp
