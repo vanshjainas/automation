@@ -1,6 +1,6 @@
 import os
 import re
-import moviepy.editor  # Required by instagrapi
+import moviepy  # Required by instagrapi
 from flask import Flask, request, render_template, redirect, flash
 from instagrapi import Client
 import instaloader
