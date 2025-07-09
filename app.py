@@ -1,111 +1,83 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from instagrapi import Client
 import os
-import json
-import time
-import threading
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime
-from urllib.parse import urlparse
+import re
+import moviepy # Required by instagrapi, even if not directly used
+from flask import Flask, request, render_template, redirect, flash
+from instagrapi import Client
+import instaloader
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = "secret-key"
 
-SESSIONS_FILE = "sessions.json"
-SCHEDULED_FILE = "scheduled_posts.json"
+COOKIES_DIR = "cookies"
+DOWNLOADS_DIR = "downloads"
+os.makedirs(COOKIES_DIR, exist_ok=True)
+os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 
-def load_sessions():
-    with open(SESSIONS_FILE, "r") as f:
-        return json.load(f)
+# Get available account usernames from cookies folder
+def get_accounts():
+    return [f.split(".")[0] for f in os.listdir(COOKIES_DIR) if f.endswith(".pkl")]
 
-def load_scheduled():
-    with open(SCHEDULED_FILE, "r") as f:
-        return json.load(f)
+# Download Instagram reel using instaloader
+def download_reel(url):
+    match = re.search(r"instagram\.com/reel/([A-Za-z0-9_-]+)", url)
+    if not match:
+        raise ValueError("Invalid Instagram Reel URL.")
+    shortcode = match.group(1)
+    subfolder = os.path.join(DOWNLOADS_DIR, shortcode)
+    os.makedirs(subfolder, exist_ok=True)
 
-def save_scheduled(data):
-    with open(SCHEDULED_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+    loader = instaloader.Instaloader(
+        dirname_pattern=subfolder,
+        save_metadata=False,
+        download_comments=False
+    )
+    post = instaloader.Post.from_shortcode(loader.context, shortcode)
+    loader.download_post(post, target=subfolder)
 
-def download_reel(url, sessionid=None, username=None):
-    import subprocess
-    import uuid
+    for file in os.listdir(subfolder):
+        if file.endswith(".mp4"):
+            return os.path.join(subfolder, file)
 
-    output_name = f"downloads/{str(uuid.uuid4())}.mp4"
+    raise FileNotFoundError("Reel video not found.")
+
+# Upload using session cookies
+def upload_with_cookies(username, video_path, caption):
+    cl = Client()
+    cookie_path = os.path.join(COOKIES_DIR, f"{username}.pkl")
     try:
-        result = subprocess.run([
-            "yt-dlp", "-o", output_name, url
-        ], capture_output=True, text=True)
-        
-        if result.returncode == 0 and os.path.exists(output_name):
-            return output_name
+        if os.path.exists(cookie_path):
+            cl.load_settings(cookie_path)
+            sessionid = cl.settings.get("authorization_data", {}).get("sessionid")
+            if not sessionid:
+                raise Exception("Session ID missing in cookie.")
+            cl.login_by_sessionid(sessionid)
         else:
-            print("yt-dlp error:", result.stderr)
+            raise Exception("Cookie not found for this user.")
+        cl.clip_upload(video_path, caption)
     except Exception as e:
-        print("yt-dlp exception:", e)
-    
-    return None
-
-
-def post_to_instagram(account_name, video_path, caption):
-    try:
-        cl = Client()
-        sessions = load_sessions()
-        cl.set_settings(sessions[account_name])
-        cl.login_by_sessionid(sessions[account_name]["authorization_data"]["sessionid"])
-        cl.reel_upload(video_path, caption)
-        print(f"✅ Posted to {account_name}: {caption}")
-        return True
-    except Exception as e:
-        print(f"❌ Error posting: {e}")
-        return False
-
-def check_scheduler():
-    while True:
-        now = datetime.now().timestamp()
-        scheduled = load_scheduled()
-        remaining = []
-        for task in scheduled:
-            if task["timestamp"] <= now:
-                path = download_reel(task["url"])
-                if path:
-                    post_to_instagram(task["account"], path, task["caption"])
-                    os.remove(path)
-            else:
-                remaining.append(task)
-        save_scheduled(remaining)
-        time.sleep(60)
+        raise RuntimeError(f"Upload failed: {e}")
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    sessions = load_sessions()
-    accounts = list(sessions.keys())
+    accounts = get_accounts()
     if request.method == "POST":
-        reel_url = request.form.get("reel_url")
-        account = request.form.get("account")
-        caption = request.form.get("caption") or "#wolfinroyals"
-        post_time = request.form.get("post_time")
-        if post_time:
-            ts = datetime.strptime(post_time, "%Y-%m-%dT%H:%M").timestamp()
-            task = {"url": reel_url, "account": account, "caption": caption, "timestamp": ts}
-            scheduled = load_scheduled()
-            scheduled.append(task)
-            save_scheduled(scheduled)
-            flash("✅ Reel scheduled successfully!", "success")
-        else:
-            video_path = download_reel(reel_url)
-            if video_path:
-                if post_to_instagram(account, video_path, caption):
-                    flash("✅ Posted successfully!", "success")
-                else:
-                    flash("❌ Failed to post", "error")
-                os.remove(video_path)
-            else:
-                flash("❌ Failed to download the reel", "error")
-        return redirect(url_for("index"))
+        url = request.form.get("url", "").strip()
+        caption = request.form.get("caption", "").strip()
+        username = request.form.get("account", "").strip()
+
+        if not url or not caption or not username:
+            flash("All fields are required.")
+            return redirect("/")
+
+        try:
+            video_path = download_reel(url)
+            upload_with_cookies(username, video_path, caption)
+            flash(f"✅ Successfully posted from @{username}")
+        except Exception as e:
+            flash(f"❌ {str(e)}")
+        return redirect("/")
+
     return render_template("index.html", accounts=accounts)
 
 if __name__ == "__main__":
-    os.makedirs("downloads", exist_ok=True)
-    t = threading.Thread(target=check_scheduler, daemon=True)
-    t.start()
-    app.run(host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0")

@@ -1,7 +1,5 @@
-flask
-instagrapi
-instaloader
-moviepy
+Flask
+instagrapi>=1.17.4
+instaloader>=4.10
+moviepy>=1.0.3
 imageio[ffmpeg]
-apscheduler
-yt-dlp
