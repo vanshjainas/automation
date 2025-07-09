@@ -1,119 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Instagram Reposter</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f8f9fa;
-      color: #333;
-      padding: 40px;
-      max-width: 600px;
-      margin: auto;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-      background: #ffffff;
-    }
-
-    h2 {
-      text-align: center;
-      color: #4b0082;
-      margin-bottom: 30px;
-    }
-
-    label {
-      font-weight: 600;
-      display: block;
-      margin-bottom: 5px;
-      margin-top: 15px;
-    }
-
-    input[type="url"],
-    input[type="text"],
-    input[type="datetime-local"],
-    select {
-      width: 100%;
-      padding: 10px 12px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-sizing: border-box;
-      transition: border-color 0.3s;
-    }
-
-    input:focus,
-    select:focus {
-      border-color: #4b0082;
-      outline: none;
-    }
-
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 12px;
-      background-color: #4b0082;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #37006b;
-    }
-
-    .message {
-      padding: 10px;
-      margin-top: 20px;
-      border-radius: 6px;
-      font-weight: 600;
-    }
-
-    .message.success {
-      background-color: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-
-    .message.error {
-      background-color: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Instagram Reel Reposter</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
+        .container { background: white; padding: 20px; max-width: 500px; margin: auto; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input, textarea, select, button { width: 100%; margin-top: 10px; padding: 10px; font-size: 14px; border-radius: 5px; border: 1px solid #ccc; }
+        button { background: #0095f6; color: white; border: none; cursor: pointer; }
+        button:hover { background: #007cd1; }
+        .flash { padding: 10px; margin-top: 10px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; border-radius: 5px; }
+    </style>
 </head>
 <body>
-  <h2>📤 Instagram Reel Reposter</h2>
-  <form method="POST">
-    <label>Reel URL:</label>
-    <input type="url" name="reel_url" required>
-
-    <label>Choose Account:</label>
-    <select name="account" required>
-      {% for acc in accounts %}
-      <option value="{{ acc }}">{{ acc }}</option>
-      {% endfor %}
-    </select>
-
-    <label>Caption:</label>
-    <input type="text" name="caption" placeholder="#wolfinroyals">
-
-    <label>Schedule Time (optional):</label>
-    <input type="datetime-local" name="post_time">
-
-    <button type="submit">Post / Schedule</button>
-  </form>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="message {{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+    <div class="container">
+        <h2>Instagram Reel Reposter</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for msg in messages %}
+              <div class="flash">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <label>Instagram Reel URL:</label>
+            <input type="text" name="url" required>
+            <label>Caption:</label>
+            <textarea name="caption" rows="4" required></textarea>
+            <label>Account:</label>
+            <select name="account" required>
+                {% for acc in accounts %}
+                <option value="{{ acc }}">{{ acc }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Post Reel</button>
+        </form>
+    </div>
 </body>
 </html>
