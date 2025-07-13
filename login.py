@@ -85,3 +85,16 @@ for idx, (username, _) in enumerate(accounts):
     tk.Button(frame, text="Login with Cookies", command=lambda u=username: login_with_cookies_only(u)).pack(side="left", padx=5)
 
 root.mainloop()
+import json
+import pickle
+
+# Load cookies from JSON file
+with open("instagram_cookies.json", "r") as json_file:
+    cookies = json.load(json_file)
+
+# Save cookies to PKL file
+with open("instagram_cookies.pkl", "wb") as pkl_file:
+    pickle.dump(cookies, pkl_file)
+
+print("✅ Converted instagram_cookies.json → instagram_cookies.pkl")
+

@@ -1,62 +1,78 @@
 import os
 import re
-import moviepy  # Required by instagrapi
+import moviepy # Required by instagrapi, even if not directly used
 from flask import Flask, request, render_template, redirect, flash
 from instagrapi import Client
 import instaloader
-import tempfile
 
 app = Flask(__name__)
 app.secret_key = "secret-key"
 
 COOKIES_DIR = "cookies"
+DOWNLOADS_DIR = "downloads"
 os.makedirs(COOKIES_DIR, exist_ok=True)
+os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 
 # Get available account usernames from cookies folder
 def get_accounts():
     return [f.split(".")[0] for f in os.listdir(COOKIES_DIR) if f.endswith(".pkl")]
 
-# Download Instagram reel using instaloader and return .mp4 path
+# Download Instagram reel using instaloader
 def download_reel(url):
     match = re.search(r"instagram\.com/reel/([A-Za-z0-9_-]+)", url)
     if not match:
         raise ValueError("Invalid Instagram Reel URL.")
     shortcode = match.group(1)
+    subfolder = os.path.join(DOWNLOADS_DIR, shortcode)
+    os.makedirs(subfolder, exist_ok=True)
 
-    temp_dir = tempfile.mkdtemp()
-    loader = instaloader.Instaloader(dirname_pattern=temp_dir, save_metadata=False, download_comments=False)
+    loader = instaloader.Instaloader(
+        dirname_pattern=subfolder,
+        save_metadata=False,
+        download_comments=False
+    )
     post = instaloader.Post.from_shortcode(loader.context, shortcode)
-    loader.download_post(post, target=temp_dir)
+    loader.download_post(post, target=subfolder)
 
-    for file in os.listdir(temp_dir):
+    for file in os.listdir(subfolder):
         if file.endswith(".mp4"):
-            return os.path.join(temp_dir, file)
+            return os.path.join(subfolder, file)
 
     raise FileNotFoundError("Reel video not found.")
 
-# Upload using session cookies
 def upload_with_cookies(username, video_path, caption):
     cl = Client()
     cookie_path = os.path.join(COOKIES_DIR, f"{username}.pkl")
+    try:
+        if os.path.exists(cookie_path):
+            cl.load_settings(cookie_path)
+            sessionid = cl.settings.get("authorization_data", {}).get("sessionid")
+            if not sessionid:
+                raise Exception("Session ID missing in cookie.")
+            cl.login_by_sessionid(sessionid)
+        else:
+            raise Exception("Cookie not found for this user.")
 
-    if not os.path.exists(cookie_path):
-        raise RuntimeError("Cookie file not found.")
+        # Upload to Reel
+        cl.clip_upload(video_path, caption)
+        print(f"✅ Reel uploaded for {username}")
 
-    cl.load_settings(cookie_path)
-    sessionid = cl.settings.get("authorization_data", {}).get("sessionid")
-    if not sessionid:
-        raise RuntimeError("Missing session ID in cookies.")
+        # Upload to Story
+        cl.video_upload_to_story(video_path, caption)
+        print(f"📤 Story uploaded for {username}")
 
-    cl.login_by_sessionid(sessionid)
-    cl.clip_upload(video_path, caption)
+    except Exception as e:
+        raise RuntimeError(f"Upload failed: {e}")
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     accounts = get_accounts()
     if request.method == "POST":
         url = request.form.get("url", "").strip()
-        caption = request.form.get("caption", "").strip()
-        username = request.form.get("account", "").strip()
+        caption = request.form.get("caption", "").strip() or "#wolfinroyals"
+        username = request.form.get("account", "").strip() or "wolfinroyals"
+
 
         if not url or not caption or not username:
             flash("All fields are required.")
