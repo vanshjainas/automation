@@ -1,40 +1,458 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Instagram Reel Reposter</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
-        .container { background: white; padding: 20px; max-width: 500px; margin: auto; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input, textarea, select, button { width: 100%; margin-top: 10px; padding: 10px; font-size: 14px; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #0095f6; color: white; border: none; cursor: pointer; }
-        button:hover { background: #007cd1; }
-        .flash { padding: 10px; margin-top: 10px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; border-radius: 5px; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Instagram Nebula UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    html, body {
+      margin: 0; padding: 0; overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      height: 100%;
+    }
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      display: block;
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 500px;
+      margin: 8vh auto;
+      padding: 25px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(15px);
+      color: white;
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(0,255,255,0.2);
+    }
+    h2 {
+      text-align: center;
+      color: #00ffee;
+      text-shadow: 0 0 10px #00ffee;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    label, input, textarea, select, button {
+      width: 100%;
+      display: block;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+    input, textarea, select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #00ffee;
+      color: #000;
+      font-weight: bold;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #00cccc;
+    }
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #00ffee;
+      text-shadow: 0 0 10px #00ffee;
+    }
+    @keyframes glow {
+      from { text-shadow: 0 0 10px #00ffee; }
+      to   { text-shadow: 0 0 30px #00ffee; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Instagram Reel Reposter</h2>
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for msg in messages %}
-              <div class="flash">{{ msg }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-        <form method="POST">
-            <label>Instagram Reel URL:</label>
-            <input type="text" name="url" required>
-            <label>Caption:</label>
-            <textarea name="caption" rows="4" required></textarea>
-            <label>Account:</label>
-            <select name="account" required>
-                {% for acc in accounts %}
-                <option value="{{ acc }}">{{ acc }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit">Post Reel</button>
-        </form>
-    </div>
+  <canvas></canvas>
+  <div class="container">
+    <h2>📤 Instagram Reel Reposter</h2>
+    <form method="POST">
+      <label for="url">Reel URL:</label>
+      <input type="url" id="url" name="url" required>
+      <label for="caption">Caption:</label>
+      <textarea id="caption" name="caption" rows="3" ></textarea>
+      <label for="account">Choose Account:</label>
+      <select id="account" name="account">
+  {% for acc in accounts %}
+    <option value="{{ acc }}" {% if acc == "wolfinroyals" %}selected{% endif %}>
+      {{ acc }}
+    </option>
+  {% endfor %}
+</select>
+
+      <button type="submit">🚀 Post Reel</button>
+    </form>
+    <div class="footer">Made with 💙 by <strong>Vansh Jain</strong></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script>
+    const canvas = document.querySelector('canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    const scene = new THREE.Scene();
+
+    // Camera setup
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1500);
+    camera.position.z = 800;
+
+    // 🌌 Star/Nebula particles
+    const starCount = 2000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(starCount * 3);
+    const colors = new Float32Array(starCount * 3);
+
+    for (let i = 0; i < starCount; i++) {
+      const i3 = i * 3;
+      positions[i3] = (Math.random() - 0.5) * 2000;
+      positions[i3 + 1] = (Math.random() - 0.5) * 2000;
+      positions[i3 + 2] = (Math.random() - 0.5) * 2000;
+
+      const color = new THREE.Color(`hsl(${Math.random() * 360}, 100%, 70%)`);
+      colors[i3] = color.r;
+      colors[i3 + 1] = color.g;
+      colors[i3 + 2] = color.b;
+    }
+
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 2,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending
+    });
+
+    const stars = new THREE.Points(geometry, material);
+    scene.add(stars);
+
+    // ✨ Click trail burst particles
+    const bursts = [];
+
+    function createBurst(x, y) {
+      const burstGeo = new THREE.BufferGeometry();
+      const burstCount = 80;
+      const burstPos = new Float32Array(burstCount * 3);
+      const burstVel = [];
+
+      for (let i = 0; i < burstCount; i++) {
+        const i3 = i * 3;
+        burstPos[i3] = x;
+        burstPos[i3 + 1] = y;
+        burstPos[i3 + 2] = 0;
+
+        burstVel.push(new THREE.Vector3(
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10
+        ));
+      }
+
+      burstGeo.setAttribute("position", new THREE.BufferAttribute(burstPos, 3));
+
+      const burstMat = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 4,
+        transparent: true,
+        opacity: 0.9
+      });
+
+      const burstMesh = new THREE.Points(burstGeo, burstMat);
+      burstMesh.userData = { velocity: burstVel, created: Date.now() };
+      bursts.push(burstMesh);
+      scene.add(burstMesh);
+    }
+
+    window.addEventListener('click', (e) => {
+      // Convert screen coords to NDC then to world
+      const ndc = new THREE.Vector3(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1,
+        0.5
+      );
+      ndc.unproject(camera);
+      createBurst(ndc.x, ndc.y);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      stars.rotation.y += 0.0005;
+      stars.rotation.x += 0.0003;
+
+      // update particle trails
+      bursts.forEach((b, idx) => {
+        const pos = b.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          pos.array[i * 3] += b.userData.velocity[i].x;
+          pos.array[i * 3 + 1] += b.userData.velocity[i].y;
+          pos.array[i * 3 + 2] += b.userData.velocity[i].z;
+        }
+        pos.needsUpdate = true;
+
+        const age = Date.now() - b.userData.created;
+        if (age > 1000) {
+          scene.remove(b);
+          bursts.splice(idx, 1);
+        }
+      });
+
+      camera.lookAt(scene.position);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Instagram Nebula UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    html, body {
+      margin: 0; padding: 0; overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      height: 100%;
+    }
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      display: block;
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 500px;
+      margin: 8vh auto;
+      padding: 25px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(15px);
+      color: white;
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(0,255,255,0.2);
+    }
+    h2 {
+      text-align: center;
+      color: #00ffee;
+      text-shadow: 0 0 10px #00ffee;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    label, input, textarea, select, button {
+      width: 100%;
+      display: block;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+    input, textarea, select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #00ffee;
+      color: #000;
+      font-weight: bold;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #00cccc;
+    }
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #00ffee;
+      text-shadow: 0 0 10px #00ffee;
+    }
+    @keyframes glow {
+      from { text-shadow: 0 0 10px #00ffee; }
+      to   { text-shadow: 0 0 30px #00ffee; }
+    }
+  </style>
+</head>
+<body>
+  <canvas></canvas>
+  <div class="container">
+    <h2>📤 Instagram Reel Reposter</h2>
+    <form method="POST">
+      <label for="url">Reel URL:</label>
+      <input type="url" id="url" name="url" required>
+      <label for="caption">Caption:</label>
+      <textarea id="caption" name="caption" rows="3" ></textarea>
+      <label for="account">Choose Account:</label>
+      <select id="account" name="account">
+  {% for acc in accounts %}
+    <option value="{{ acc }}" {% if acc == "wolfinroyals" %}selected{% endif %}>
+      {{ acc }}
+    </option>
+  {% endfor %}
+</select>
+
+      <button type="submit">🚀 Post Reel</button>
+    </form>
+    <div class="footer">Made with 💙 by <strong>Vansh Jain</strong></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script>
+    const canvas = document.querySelector('canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    const scene = new THREE.Scene();
+
+    // Camera setup
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1500);
+    camera.position.z = 800;
+
+    // 🌌 Star/Nebula particles
+    const starCount = 2000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(starCount * 3);
+    const colors = new Float32Array(starCount * 3);
+
+    for (let i = 0; i < starCount; i++) {
+      const i3 = i * 3;
+      positions[i3] = (Math.random() - 0.5) * 2000;
+      positions[i3 + 1] = (Math.random() - 0.5) * 2000;
+      positions[i3 + 2] = (Math.random() - 0.5) * 2000;
+
+      const color = new THREE.Color(`hsl(${Math.random() * 360}, 100%, 70%)`);
+      colors[i3] = color.r;
+      colors[i3 + 1] = color.g;
+      colors[i3 + 2] = color.b;
+    }
+
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 2,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending
+    });
+
+    const stars = new THREE.Points(geometry, material);
+    scene.add(stars);
+
+    // ✨ Click trail burst particles
+    const bursts = [];
+
+    function createBurst(x, y) {
+      const burstGeo = new THREE.BufferGeometry();
+      const burstCount = 80;
+      const burstPos = new Float32Array(burstCount * 3);
+      const burstVel = [];
+
+      for (let i = 0; i < burstCount; i++) {
+        const i3 = i * 3;
+        burstPos[i3] = x;
+        burstPos[i3 + 1] = y;
+        burstPos[i3 + 2] = 0;
+
+        burstVel.push(new THREE.Vector3(
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10
+        ));
+      }
+
+      burstGeo.setAttribute("position", new THREE.BufferAttribute(burstPos, 3));
+
+      const burstMat = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 4,
+        transparent: true,
+        opacity: 0.9
+      });
+
+      const burstMesh = new THREE.Points(burstGeo, burstMat);
+      burstMesh.userData = { velocity: burstVel, created: Date.now() };
+      bursts.push(burstMesh);
+      scene.add(burstMesh);
+    }
+
+    window.addEventListener('click', (e) => {
+      // Convert screen coords to NDC then to world
+      const ndc = new THREE.Vector3(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1,
+        0.5
+      );
+      ndc.unproject(camera);
+      createBurst(ndc.x, ndc.y);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      stars.rotation.y += 0.0005;
+      stars.rotation.x += 0.0003;
+
+      // update particle trails
+      bursts.forEach((b, idx) => {
+        const pos = b.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          pos.array[i * 3] += b.userData.velocity[i].x;
+          pos.array[i * 3 + 1] += b.userData.velocity[i].y;
+          pos.array[i * 3 + 2] += b.userData.velocity[i].z;
+        }
+        pos.needsUpdate = true;
+
+        const age = Date.now() - b.userData.created;
+        if (age > 1000) {
+          scene.remove(b);
+          bursts.splice(idx, 1);
+        }
+      });
+
+      camera.lookAt(scene.position);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+  </script>
 </body>
 </html>
